@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/sync-rugby",
+      "schedule": "0 8 * * 1"
+    }
+  ]
+}
