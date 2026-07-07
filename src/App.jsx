@@ -597,15 +597,13 @@ export default function App() {
         <p style={S.subtitle}>2026 · NORTH VS SOUTH</p>
       </div>
 
-      {/* Scoreboard — total points + weeks won */}
+      {/* Scoreboard — weeks won */}
       <div style={S.scoreboard}>
         {PLAYERS.map((p, i) => (
           <div key={p} style={{ ...S.scoreCard, ...playerColors[i] }}>
             <div style={S.playerName}>{p}</div>
-            <div style={S.bigNum}>{totalScores[p] || 0}</div>
-            <div style={S.smallLabel}>pts</div>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: "#f59e0b", marginTop: 4 }}>{weeksWon[p] || 0}</div>
-            <div style={{ ...S.smallLabel, color: "#f59e0b" }}>wks</div>
+            <div style={S.bigNum}>{weeksWon[p] || 0}</div>
+            <div style={S.smallLabel}>weeks won</div>
           </div>
         ))}
       </div>
