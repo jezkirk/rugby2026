@@ -810,17 +810,17 @@ export default function App() {
           <div style={S.rulesTitle}>📐 SCORING RULES</div>
           <div style={S.rulesGrid}>
             <div style={S.rulesPts}>25</div>
-            <div style={S.rulesText}>Exact score + exact tries (both teams)</div>
+            <div style={S.rulesText}>Exact score + exact tries (both teams) — replaces all other points</div>
             <div style={S.rulesPts}>10</div>
             <div style={S.rulesText}>Correct result (win / loss / draw)</div>
             <div style={S.rulesPts}>5</div>
-            <div style={S.rulesText}>Exact score for a team</div>
+            <div style={S.rulesText}>Exact score per team</div>
             <div style={S.rulesPts}>2</div>
             <div style={S.rulesText}>Team score within 1–3 points</div>
             <div style={S.rulesPts}>1</div>
             <div style={S.rulesText}>Team score within 4–7 points</div>
             <div style={S.rulesPts}>2</div>
-            <div style={S.rulesText}>Exact tries for both teams</div>
+            <div style={S.rulesText}>Exact tries per team</div>
           </div>
           <div style={{ fontSize: 11, color: "#475569", marginTop: 10 }}>Score and tries points apply per team. Max 25pts per match.</div>
         </div>
