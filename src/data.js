@@ -77,37 +77,35 @@ export function scorePoints(pred, actual) {
 
   let pts = 0
 
-  // Correct result (win/loss/draw)
+  // Correct result (win/loss/draw) — 10pts
   const predResult = ph > pa ? "H" : pa > ph ? "A" : "D"
   const actualResult = ah > aa ? "H" : aa > ah ? "A" : "D"
   if (predResult === actualResult) pts += 10
 
-  // Home team score points
+  // Home team score — exact 5pts, within 1-3 = 2pts, within 4-7 = 1pt
   const homeDiff = Math.abs(ph - ah)
   if (homeDiff === 0) pts += 5
   else if (homeDiff <= 3) pts += 2
   else if (homeDiff <= 7) pts += 1
 
-  // Away team score points
+  // Away team score — exact 5pts, within 1-3 = 2pts, within 4-7 = 1pt
   const awayDiff = Math.abs(pa - aa)
   if (awayDiff === 0) pts += 5
   else if (awayDiff <= 3) pts += 2
   else if (awayDiff <= 7) pts += 1
 
-  // Exact score both teams = bonus (total 25 when exact score + exact tries)
-  // Already covered by the 5+5 above for exact scores
-
-  // Tries scoring (if tries data available)
-  if (!isNaN(pht) && !isNaN(pat) && !isNaN(aht) && !isNaN(aat)) {
-    if (pht === aht && pat === aat) pts += 2  // exact tries both teams
+  // Tries — 2pts per team for exact tries
+  const triesAvailable = !isNaN(pht) && !isNaN(pat) && !isNaN(aht) && !isNaN(aat)
+  if (triesAvailable) {
+    if (pht === aht) pts += 2  // exact home tries
+    if (pat === aat) pts += 2  // exact away tries
   }
 
-  // Exact score both teams + exact tries both teams = 25 total
-  // Check: 10 (result) + 5 (home exact) + 5 (away exact) + 2 (tries exact) = 22
-  // Add bonus 3 to reach 25 when everything is exact
-  if (ph === ah && pa === aa && pht === aht && pat === aat &&
-      !isNaN(pht) && !isNaN(pat) && !isNaN(aht) && !isNaN(aat)) {
-    pts += 3 // bonus to reach 25
+  // Exact score both teams + exact tries both teams = 25pts total
+  // 10 (result) + 5 (home exact) + 5 (away exact) + 2 (home tries) + 2 (away tries) = 24
+  // Add 1 bonus to reach 25
+  if (ph === ah && pa === aa && triesAvailable && pht === aht && pat === aat) {
+    pts += 1
   }
 
   return pts
