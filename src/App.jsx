@@ -637,6 +637,138 @@ export default function App() {
         )
       })()}
 
+      {/* Previous & Next Round Panels */}
+      {(() => {
+        const now = new Date()
+        const weeks = [...new Set(MATCHES.map(m => m.week))]
+
+        // Find current/next week (first week with any open predictions)
+        const nextWeek = weeks.find(w =>
+          MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date))
+        )
+        // Find previous week (last week before next week that has results)
+        const prevWeek = nextWeek
+          ? weeks.filter(w => w < nextWeek).reverse().find(w =>
+              MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
+            )
+          : weeks[weeks.length - 1]
+
+        const colStyle = { flex: 1, textAlign: "center", minWidth: 0 }
+        const headerStyle = { fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5, padding: "4px 0" }
+        const cellStyle = { fontSize: 11, color: "#94a3b8", padding: "3px 2px", lineHeight: 1.4 }
+        const ptsStyle = { fontSize: 10, fontWeight: 700 }
+
+        return (
+          <>
+            {/* Previous round results */}
+            {prevWeek && (() => {
+              const prevMatches = MATCHES.filter(m => m.week === prevWeek)
+              const hasResults = prevMatches.some(m => getMatchResult(m, results)?.homeScore != null)
+              if (!hasResults) return null
+              return (
+                <div style={S.section}>
+                  <div style={S.sectionTitle}>📋 {WEEK_LABELS[prevWeek]} — Results</div>
+                  {prevMatches.map(m => {
+                    const actual = getMatchResult(m, results)
+                    if (!actual?.homeScore == null && actual?.homeScore !== 0) return null
+                    return (
+                      <div key={m.id} style={{ ...S.matchCard, marginBottom: 8 }}>
+                        {/* Match header */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderBottom: "1px solid #1e293b", paddingBottom: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1 }}>
+                            {flag(m.home)} {m.home}
+                          </span>
+                          {actual?.homeScore != null && (
+                            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: "#f59e0b" }}>
+                              {actual.homeScore}{actual.homeTries != null ? `(${actual.homeTries}T)` : ""} – {actual.awayScore}{actual.awayTries != null ? `(${actual.awayTries}T)` : ""}
+                            </span>
+                          )}
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1, textAlign: "right" }}>
+                            {m.away} {flag(m.away)}
+                          </span>
+                        </div>
+                        {/* Player predictions */}
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {PLAYERS.map(p => {
+                            const pred = allPreds[p]?.[m.id]
+                            const pts = actual?.homeScore != null && pred ? scorePoints(pred, actual) : null
+                            return (
+                              <div key={p} style={colStyle}>
+                                <div style={headerStyle}>{p}</div>
+                                {pred ? (
+                                  <>
+                                    <div style={cellStyle}>
+                                      {pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}
+                                    </div>
+                                    <div style={{ ...ptsStyle, color: pts > 0 ? "#4ade80" : "#f87171" }}>+{pts}pts</div>
+                                  </>
+                                ) : (
+                                  <div style={{ ...cellStyle, color: "#334155" }}>–</div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+
+            {/* Next round predictions */}
+            {nextWeek && (() => {
+              const nextMatches = MATCHES.filter(m => m.week === nextWeek)
+              return (
+                <div style={S.section}>
+                  <div style={S.sectionTitle}>🏉 {WEEK_LABELS[nextWeek]} — Predictions</div>
+                  {nextMatches.map(m => {
+                    const open = isPredictionOpen(m.date)
+                    const soon = isDeadlineSoon(m.date)
+                    return (
+                      <div key={m.id} style={{ ...S.matchCard, ...(soon ? S.matchCardSoon : {}), ...(!open ? S.matchCardLocked : {}), marginBottom: 8 }}>
+                        {/* Match header */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderBottom: "1px solid #1e293b", paddingBottom: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1 }}>
+                            {flag(m.home)} {m.home}
+                          </span>
+                          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                            <span style={S.matchDate}>{m.date}</span>
+                            {soon && open && <span style={S.badgeAmber}>🔔</span>}
+                            {!open && <span style={S.badge}>🔒</span>}
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1, textAlign: "right" }}>
+                            {m.away} {flag(m.away)}
+                          </span>
+                        </div>
+                        {/* Player predictions */}
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {PLAYERS.map(p => {
+                            const pred = allPreds[p]?.[m.id]
+                            return (
+                              <div key={p} style={colStyle}>
+                                <div style={headerStyle}>{p}</div>
+                                {pred?.homeScore != null ? (
+                                  <div style={cellStyle}>
+                                    {pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}
+                                  </div>
+                                ) : (
+                                  <div style={{ ...cellStyle, color: "#334155" }}>no pred</div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
+          </>
+        )
+      })()}
+
       {/* Action buttons */}
       <div style={S.section}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
