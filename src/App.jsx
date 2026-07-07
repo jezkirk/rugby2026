@@ -185,7 +185,7 @@ function getWeekScores(week, allPreds, results) {
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [view, setView] = useState("home")
   const [activePlayer, setActivePlayer] = useState(null)
   const [activeWeek, setActiveWeek] = useState(1)
@@ -212,18 +212,15 @@ export default function App() {
   }
 
   useEffect(() => {
-    async function init() {
-      await refresh()
-      // Default to current active week
-      const now = new Date()
-      const current = MATCHES.find(m => new Date(m.date + "T05:00:00Z") > now)
-      if (current) {
-        setActiveWeek(current.week)
-        setResultWeek(current.week)
-      }
-      setLoading(false)
+    // Set current week immediately without waiting for data
+    const now = new Date()
+    const current = MATCHES.find(m => new Date(m.date + "T05:00:00Z") > now)
+    if (current) {
+      setActiveWeek(current.week)
+      setResultWeek(current.week)
     }
-    init()
+    // Load data in background
+    refresh()
   }, [])
 
   async function handleSync() {
@@ -269,8 +266,6 @@ export default function App() {
     await saveResult(match.id, match.home, match.away, result)
     setResults(prev => ({ ...prev, [`${match.home}|${match.away}`]: result }))
   }
-
-  if (loading) return <><GS /><div style={S.spinner}>LOADING…</div></>
 
   const weeks = [...new Set(MATCHES.map(m => m.week))]
   const totalScores = getTotalScores(allPreds, results)
