@@ -714,9 +714,20 @@ export default function App() {
             {/* Next round predictions */}
             {nextWeek && (() => {
               const nextMatches = MATCHES.filter(m => m.week === nextWeek)
+              // Check if ALL players have predicted ALL matches in this round
+              const allPredsIn = nextMatches.every(m =>
+                PLAYERS.every(p => allPreds[p]?.[m.id]?.homeScore != null)
+              )
+              // Find earliest match date for deadline display
+              const earliestDate = nextMatches[0]?.date
               return (
                 <div style={S.section}>
                   <div style={S.sectionTitle}>🏉 {WEEK_LABELS[nextWeek]} — Predictions</div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginBottom: 10 }}>
+                    {allPredsIn
+                      ? "✅ All predictions in — good luck!"
+                      : `Predictions hidden until all players have submitted · Lock 6am BST ${earliestDate}`}
+                  </div>
                   {nextMatches.map(m => {
                     const open = isPredictionOpen(m.date)
                     const soon = isDeadlineSoon(m.date)
@@ -740,15 +751,18 @@ export default function App() {
                         <div style={{ display: "flex", gap: 4 }}>
                           {PLAYERS.map(p => {
                             const pred = allPreds[p]?.[m.id]
+                            const hasPred = pred?.homeScore != null
                             return (
                               <div key={p} style={colStyle}>
                                 <div style={headerStyle}>{p}</div>
-                                {pred?.homeScore != null ? (
+                                {allPredsIn && hasPred ? (
                                   <div style={cellStyle}>
                                     {pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}
                                   </div>
+                                ) : hasPred ? (
+                                  <div style={{ ...cellStyle, color: "#f59e0b" }}>hidden</div>
                                 ) : (
-                                  <div style={{ ...cellStyle, color: "#334155" }}>no pred</div>
+                                  <div style={{ ...cellStyle, color: "#f87171" }}>pending</div>
                                 )}
                               </div>
                             )
