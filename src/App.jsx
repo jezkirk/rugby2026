@@ -637,25 +637,25 @@ export default function App() {
         const now = new Date()
         const weeks = [...new Set(MATCHES.map(m => m.week))]
 
-        // "Active" week = the most recent week that has started (predictions locked for at least one match)
-        // but not yet fully completed (missing at least one result)
-        // Once fully completed, move to next week
+        // "Active" week = most recent week where match day has passed for at least one match
+        // Stays on that week until ALL results are entered, then moves to next week
         const activeWeekNum = (() => {
-          // Find weeks where predictions are locked (match day has passed for at least one match)
+          const now = new Date()
+          // Weeks where at least one match date has passed
           const startedWeeks = weeks.filter(w =>
-            MATCHES.filter(m => m.week === w).some(m => !isPredictionOpen(m.date))
+            MATCHES.filter(m => m.week === w).some(m => new Date(m.date + "T23:59:59Z") < now)
           )
           if (startedWeeks.length === 0) {
-            // No games started yet — show next upcoming week
+            // No matches started yet — show next upcoming week
             return weeks.find(w => MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date)))
           }
-          // Find the most recent started week that isn't fully completed
+          // Most recent started week that isn't fully completed with results
           const incompleteStarted = [...startedWeeks].reverse().find(w => {
             const weekMatches = MATCHES.filter(m => m.week === w)
             return !weekMatches.every(m => getMatchResult(m, results)?.homeScore != null)
           })
           if (incompleteStarted) return incompleteStarted
-          // All started weeks are complete — show next upcoming week
+          // All started weeks have full results — show next upcoming week
           return weeks.find(w => MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date)))
         })()
 
