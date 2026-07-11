@@ -110,7 +110,7 @@ function scoreBreakdown(pred, actual) {
   const triesAvailable = !isNaN(pht) && !isNaN(pat) && !isNaN(aht) && !isNaN(aat)
   // Check for 25pt jackpot
   if (ph === ah && pa === aa && triesAvailable && pht === aht && pat === aat) {
-    return [{ label: "🎯 Exact!", pts: 25 }]
+    return [{ label: "🎯 Exact!", pts: 30 }]
   }
   const parts = []
   const predResult = ph > pa ? "H" : pa > ph ? "A" : "D"
@@ -868,7 +868,7 @@ export default function App() {
         <div style={S.rulesBox}>
           <div style={S.rulesTitle}>📐 SCORING RULES</div>
           <div style={S.rulesGrid}>
-            <div style={S.rulesPts}>25</div>
+            <div style={S.rulesPts}>30</div>
             <div style={S.rulesText}>Exact score + exact tries (both teams) — replaces all other points</div>
             <div style={S.rulesPts}>10</div>
             <div style={S.rulesText}>Correct result (win / loss / draw)</div>
