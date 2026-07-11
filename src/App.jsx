@@ -637,15 +637,34 @@ export default function App() {
         const now = new Date()
         const weeks = [...new Set(MATCHES.map(m => m.week))]
 
-        // Find current/next week (first week with any open predictions)
-        const nextWeek = weeks.find(w =>
-          MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date))
-        )
-        // Find previous week (last week before next week that has results)
-        const prevWeek = nextWeek
-          ? weeks.filter(w => w < nextWeek).reverse().find(w =>
-              MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
-            )
+        // "Active" week = the most recent week that has started (predictions locked for at least one match)
+        // but not yet fully completed (missing at least one result)
+        // Once fully completed, move to next week
+        const activeWeekNum = (() => {
+          // Find weeks where predictions are locked (match day has passed for at least one match)
+          const startedWeeks = weeks.filter(w =>
+            MATCHES.filter(m => m.week === w).some(m => !isPredictionOpen(m.date))
+          )
+          if (startedWeeks.length === 0) {
+            // No games started yet — show next upcoming week
+            return weeks.find(w => MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date)))
+          }
+          // Find the most recent started week that isn't fully completed
+          const incompleteStarted = [...startedWeeks].reverse().find(w => {
+            const weekMatches = MATCHES.filter(m => m.week === w)
+            return !weekMatches.every(m => getMatchResult(m, results)?.homeScore != null)
+          })
+          if (incompleteStarted) return incompleteStarted
+          // All started weeks are complete — show next upcoming week
+          return weeks.find(w => MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date)))
+        })()
+
+        // Previous week = last fully completed week before active week
+        const prevWeek = activeWeekNum
+          ? weeks.filter(w => w < activeWeekNum).reverse().find(w => {
+              const weekMatches = MATCHES.filter(m => m.week === w)
+              return weekMatches.every(m => getMatchResult(m, results)?.homeScore != null)
+            })
           : weeks[weeks.length - 1]
 
         const colStyle = { flex: 1, textAlign: "center", minWidth: 0 }
@@ -712,8 +731,8 @@ export default function App() {
             })()}
 
             {/* Next round predictions */}
-            {nextWeek && (() => {
-              const nextMatches = MATCHES.filter(m => m.week === nextWeek)
+            {activeWeekNum && (() => {
+              const nextMatches = MATCHES.filter(m => m.week === activeWeekNum)
               // Check if ALL players have predicted ALL matches in this round
               const allPredsIn = nextMatches.every(m =>
                 PLAYERS.every(p => allPreds[p]?.[m.id]?.homeScore != null)
@@ -722,7 +741,7 @@ export default function App() {
               const earliestDate = nextMatches[0]?.date
               return (
                 <div style={S.section}>
-                  <div style={S.sectionTitle}>🏉 {WEEK_LABELS[nextWeek]} — Predictions</div>
+                  <div style={S.sectionTitle}>🏉 {WEEK_LABELS[activeWeekNum]} — Predictions</div>
                   <div style={{ fontSize: 12, color: "#64748b", marginBottom: 10 }}>
                     {allPredsIn
                       ? "✅ All predictions in — good luck!"
