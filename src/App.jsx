@@ -622,9 +622,21 @@ export default function App() {
           MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
         )
         if (scoredWeeks.length === 0) return null
+        const maxTotal = Math.max(...PLAYERS.map(p => totalScores[p] || 0))
         return (
           <div style={S.section}>
             <div style={S.sectionTitle}>Week by Week</div>
+            {/* Total row */}
+            <div style={{ ...S.weekRow, background: "#1a1200", border: "1px solid #f59e0b44", marginBottom: 4 }}>
+              <div style={{ ...S.weekRowLabel, fontWeight: 700, color: "#f59e0b" }}>Total</div>
+              <div style={S.weekRowScores}>
+                {PLAYERS.map(p => (
+                  <span key={p} style={{ ...S.weekPts, fontWeight: 700, ...(totalScores[p] === maxTotal && maxTotal > 0 ? S.weekPtsLead : { color: "#e2e8f0" }) }}>
+                    {p}: {totalScores[p] || 0}
+                  </span>
+                ))}
+              </div>
+            </div>
             {scoredWeeks.map(w => {
               const ws = getWeekScores(w, allPreds, results)
               const maxScore = Math.max(...PLAYERS.map(p => ws[p]))
