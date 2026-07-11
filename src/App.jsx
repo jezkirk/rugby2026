@@ -672,13 +672,11 @@ export default function App() {
           return weeks.find(w => MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date)))
         })()
 
-        // Previous week = last fully completed week before active week
-        const prevWeek = activeWeekNum
-          ? weeks.filter(w => w < activeWeekNum).reverse().find(w => {
-              const weekMatches = MATCHES.filter(m => m.week === w)
-              return weekMatches.every(m => getMatchResult(m, results)?.homeScore != null)
-            })
-          : weeks[weeks.length - 1]
+        // Previous week = last week with any results entered (regardless of active week)
+        const prevWeek = [...weeks].reverse().find(w => {
+          if (w === activeWeekNum) return false
+          return MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
+        })
 
         const colStyle = { flex: 1, textAlign: "center", minWidth: 0 }
         const headerStyle = { fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5, padding: "4px 0" }
@@ -781,7 +779,7 @@ export default function App() {
                     const open = isPredictionOpen(m.date)
                     const soon = isDeadlineSoon(m.date)
                     return (
-                      <div key={m.id} style={{ ...S.matchCard, ...(soon ? S.matchCardSoon : {}), ...(!open ? S.matchCardLocked : {}), marginBottom: 8 }}>
+                      <div key={m.id} style={{ ...S.matchCard, marginBottom: 8 }}>
                         {/* Match header */}
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderBottom: "1px solid #1e293b", paddingBottom: 6 }}>
                           <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1 }}>
