@@ -223,8 +223,6 @@ export default function App() {
   const [playerPreds, setPlayerPreds] = useState({})
   const [results, setResults] = useState({})
   const [saving, setSaving] = useState(false)
-  const [syncing, setSyncing] = useState(false)
-  const [syncMsg, setSyncMsg] = useState("")
   const [toast, setToast] = useState("")
   const [localResults, setLocalResults] = useState({})
 
@@ -253,19 +251,7 @@ export default function App() {
     refresh()
   }, [])
 
-  async function handleSync() {
-    setSyncing(true)
-    setSyncMsg("Syncing…")
-    try {
-      const res = await fetch("/api/sync-rugby")
-      const data = await res.json()
-      if (data.error) setSyncMsg(`Error: ${data.error}`)
-      else setSyncMsg(`Synced ${data.synced} results ✓`)
-      await refresh()
-    } catch { setSyncMsg("Sync failed") }
-    setSyncing(false)
-    setTimeout(() => setSyncMsg(""), 3000)
-  }
+
 
   async function openPredict(player) {
     setActivePlayer(player)
@@ -874,13 +860,7 @@ export default function App() {
             <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Enter scores</div>
           </button>
         </div>
-        <div style={{ marginTop: 12, textAlign: "center", display: "flex", gap: 8, justifyContent: "center" }}>
-          <button style={{ ...S.btnSmall, borderColor: syncing ? "#334155" : "#22c55e44", color: syncing ? "#475569" : "#4ade80" }}
-            onClick={handleSync} disabled={syncing}>
-            {syncing ? "⏳ Syncing…" : "🔄 Sync Scores"}
-          </button>
-        </div>
-        {syncMsg && <div style={{ textAlign: "center", fontSize: 12, color: "#4ade80", marginTop: 8 }}>{syncMsg}</div>}
+
       </div>
 
       {/* Scoring rules */}
