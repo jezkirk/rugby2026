@@ -197,6 +197,7 @@ export default function App() {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState("")
   const [toast, setToast] = useState("")
+  const [localResults, setLocalResults] = useState({})
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(""), 2500) }
 
@@ -409,7 +410,6 @@ export default function App() {
   // ── RESULTS VIEW ──
   if (view === "results") {
     const weekMatches = MATCHES.filter(m => m.week === resultWeek)
-    const [localResults, setLocalResults] = useState({})
 
     function setLocal(matchId, field, val) {
       setLocalResults(prev => ({
@@ -640,10 +640,10 @@ export default function App() {
         // "Active" week = most recent week where match day has passed for at least one match
         // Stays on that week until ALL results are entered, then moves to next week
         const activeWeekNum = (() => {
-          const now = new Date()
-          // Weeks where at least one match date has passed
+          const todayStr = new Date().toISOString().slice(0, 10)
+          // Weeks where at least one match date is today or in the past
           const startedWeeks = weeks.filter(w =>
-            MATCHES.filter(m => m.week === w).some(m => new Date(m.date + "T23:59:59Z") < now)
+            MATCHES.filter(m => m.week === w).some(m => m.date <= todayStr)
           )
           if (startedWeeks.length === 0) {
             // No matches started yet — show next upcoming week
