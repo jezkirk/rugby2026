@@ -751,17 +751,7 @@ export default function App() {
                               </div>
                             )
                           })}
-                          {/* Result column */}
-                          <div style={{ ...colStyle, borderLeft: "1px solid #1e293b", paddingLeft: 4 }}>
-                            <div style={{ ...headerStyle, color: "#f59e0b" }}>Result</div>
-                            {actual?.homeScore != null ? (
-                              <div style={{ ...cellStyle, color: "#f59e0b", fontWeight: 700, whiteSpace: "nowrap", fontSize: 10 }}>
-                                {actual.homeScore}{actual.homeTries != null ? `(${actual.homeTries}T)` : ""}–{actual.awayScore}{actual.awayTries != null ? `(${actual.awayTries}T)` : ""}
-                              </div>
-                            ) : (
-                              <div style={{ ...cellStyle, color: "#334155" }}>TBD</div>
-                            )}
-                          </div>
+                          {/* Result column removed — result shown between team names above */}
                         </div>
                       </div>
                     )
@@ -842,22 +832,7 @@ export default function App() {
                               </div>
                             )
                           })}
-                          {/* Result column */}
-                          {(() => {
-                            const actual = getMatchResult(m, results)
-                            return (
-                              <div style={{ ...colStyle, borderLeft: "1px solid #1e293b", paddingLeft: 4 }}>
-                                <div style={{ ...headerStyle, color: "#f59e0b" }}>Result</div>
-                                {actual?.homeScore != null ? (
-                                  <div style={{ ...cellStyle, color: "#f59e0b", fontWeight: 700, whiteSpace: "nowrap", fontSize: 10 }}>
-                                    {actual.homeScore}{actual.homeTries != null ? `(${actual.homeTries}T)` : ""}–{actual.awayScore}{actual.awayTries != null ? `(${actual.awayTries}T)` : ""}
-                                  </div>
-                                ) : (
-                                  <div style={{ ...cellStyle, color: "#334155" }}>TBD</div>
-                                )}
-                              </div>
-                            )
-                          })()}
+                          {/* Result column removed — result shown between team names above */}
                         </div>
                       </div>
                     )
