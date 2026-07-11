@@ -100,7 +100,36 @@ function Toast({ msg }) {
   return <div style={S.toast}>{msg}</div>
 }
 
-// ─── SUPABASE HELPERS ─────────────────────────────────────────────────────────
+function scoreBreakdown(pred, actual) {
+  if (!pred || !actual) return null
+  const ph = parseInt(pred.homeScore), pa = parseInt(pred.awayScore)
+  const ah = parseInt(actual.homeScore), aa = parseInt(actual.awayScore)
+  const pht = parseInt(pred.homeTries), pat = parseInt(pred.awayTries)
+  const aht = parseInt(actual.homeTries), aat = parseInt(actual.awayTries)
+  if (isNaN(ph) || isNaN(pa) || isNaN(ah) || isNaN(aa)) return null
+  const triesAvailable = !isNaN(pht) && !isNaN(pat) && !isNaN(aht) && !isNaN(aat)
+  // Check for 25pt jackpot
+  if (ph === ah && pa === aa && triesAvailable && pht === aht && pat === aat) {
+    return [{ label: "🎯 Exact!", pts: 25 }]
+  }
+  const parts = []
+  const predResult = ph > pa ? "H" : pa > ph ? "A" : "D"
+  const actualResult = ah > aa ? "H" : aa > ah ? "A" : "D"
+  if (predResult === actualResult) parts.push({ label: "Result", pts: 10 })
+  const homeDiff = Math.abs(ph - ah)
+  if (homeDiff === 0) parts.push({ label: `${actual.homeTeam || "Home"} score`, pts: 5 })
+  else if (homeDiff <= 3) parts.push({ label: "Home ±1-3", pts: 2 })
+  else if (homeDiff <= 7) parts.push({ label: "Home ±4-7", pts: 1 })
+  const awayDiff = Math.abs(pa - aa)
+  if (awayDiff === 0) parts.push({ label: `${actual.awayTeam || "Away"} score`, pts: 5 })
+  else if (awayDiff <= 3) parts.push({ label: "Away ±1-3", pts: 2 })
+  else if (awayDiff <= 7) parts.push({ label: "Away ±4-7", pts: 1 })
+  if (triesAvailable) {
+    if (pht === aht) parts.push({ label: "Home tries", pts: 2 })
+    if (pat === aat) parts.push({ label: "Away tries", pts: 2 })
+  }
+  return parts
+}
 async function loadPredictions(player) {
   const { data } = await supabase.from("rugby_predictions").select("*").eq("player", player)
   const map = {}
@@ -706,6 +735,7 @@ export default function App() {
                           {PLAYERS.map(p => {
                             const pred = allPreds[p]?.[m.id]
                             const pts = actual?.homeScore != null && pred ? scorePoints(pred, actual) : null
+                            const breakdown = actual?.homeScore != null && pred ? scoreBreakdown(pred, actual) : null
                             return (
                               <div key={p} style={colStyle}>
                                 <div style={headerStyle}>{p}</div>
@@ -715,6 +745,11 @@ export default function App() {
                                       {pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}
                                     </div>
                                     <div style={{ ...ptsStyle, color: pts > 0 ? "#4ade80" : "#f87171" }}>+{pts}pts</div>
+                                    {breakdown && breakdown.map((b, i) => (
+                                      <div key={i} style={{ fontSize: 9, color: "#475569", lineHeight: 1.4 }}>
+                                        {b.label}: +{b.pts}
+                                      </div>
+                                    ))}
                                   </>
                                 ) : (
                                   <div style={{ ...cellStyle, color: "#334155" }}>–</div>
@@ -771,10 +806,26 @@ export default function App() {
                           {PLAYERS.map(p => {
                             const pred = allPreds[p]?.[m.id]
                             const hasPred = pred?.homeScore != null
+                            const actual = getMatchResult(m, results)
+                            const hasResult = actual?.homeScore != null
+                            const pts = hasResult && hasPred ? scorePoints(pred, actual) : null
+                            const breakdown = hasResult && hasPred ? scoreBreakdown(pred, actual) : null
                             return (
                               <div key={p} style={colStyle}>
                                 <div style={headerStyle}>{p}</div>
-                                {allPredsIn && hasPred ? (
+                                {hasResult && hasPred ? (
+                                  <>
+                                    <div style={cellStyle}>
+                                      {pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}
+                                    </div>
+                                    <div style={{ fontSize: 10, fontWeight: 700, color: pts > 0 ? "#4ade80" : "#64748b", marginTop: 2 }}>+{pts}pts</div>
+                                    {breakdown && breakdown.map((b, i) => (
+                                      <div key={i} style={{ fontSize: 9, color: "#475569", lineHeight: 1.4 }}>
+                                        {b.label}: +{b.pts}
+                                      </div>
+                                    ))}
+                                  </>
+                                ) : allPredsIn && hasPred ? (
                                   <div style={cellStyle}>
                                     {pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}
                                   </div>
