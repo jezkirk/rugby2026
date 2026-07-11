@@ -601,10 +601,8 @@ export default function App() {
   return (
     <div style={S.root}>
       <GS />
-      <div style={S.hero}>
-        <img src="/logo.png" alt="Nations Championship 2026" style={{ height: 80, marginBottom: 12, objectFit: "contain" }} />
-        <h1 style={S.title}>NATIONS<br /><span style={S.titleAccent}>CHAMPIONSHIP</span></h1>
-        <p style={S.subtitle}>2026 · NORTH VS SOUTH</p>
+      <div style={{ textAlign: "center", padding: "24px 20px 16px", borderBottom: "1px solid #1e293b" }}>
+        <img src="/logo.png" alt="Nations Championship 2026" style={{ maxWidth: "100%", height: "auto", maxHeight: 120, objectFit: "contain" }} />
       </div>
 
       {/* Scoreboard — weeks won */}
