@@ -225,6 +225,7 @@ export default function App() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState("")
   const [localResults, setLocalResults] = useState({})
+  const [historyWeek, setHistoryWeek] = useState(1)
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(""), 2500) }
 
@@ -428,7 +429,6 @@ export default function App() {
     const completedWeeks = weeks.filter(w =>
       MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
     )
-    const [historyWeek, setHistoryWeek] = useState(completedWeeks[completedWeeks.length - 1] || 1)
     const colStyle = { flex: 1, textAlign: "center", minWidth: 0 }
     const headerStyle = { fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5, padding: "4px 0" }
     const cellStyle = { fontSize: 11, color: "#94a3b8", padding: "3px 2px", lineHeight: 1.4 }
@@ -893,7 +893,14 @@ export default function App() {
             <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Enter scores</div>
           </button>
           <button style={{ background: "#0a0a1a", border: "1px solid #6366f144", borderRadius: 12, padding: "16px 8px", cursor: "pointer", textAlign: "center", color: "#e2e8f0", width: "100%" }}
-            onClick={() => setView("history")}>
+            onClick={() => {
+              const weeks = [...new Set(MATCHES.map(m => m.week))]
+              const completed = weeks.filter(w =>
+                MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
+              )
+              if (completed.length > 0) setHistoryWeek(completed[completed.length - 1])
+              setView("history")
+            }}>
             <div style={{ fontSize: 22, marginBottom: 4 }}>📖</div>
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, color: "#fff" }}>History</div>
             <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Past rounds</div>
