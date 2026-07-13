@@ -773,8 +773,9 @@ export default function App() {
           const weekMatches = MATCHES.filter(m => m.week === weekNum)
           if (!weekMatches.length) return null
           const lastDate = weekMatches.map(m => m.date).sort().reverse()[0]
+          // Midnight BST going into Monday = Sunday 23:00 UTC
           const d = new Date(lastDate + "T23:00:00Z")
-          d.setDate(d.getDate() + 2)
+          d.setDate(d.getDate() + 1) // 1 day after last match
           return d
         }
 
