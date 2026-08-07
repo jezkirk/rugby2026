@@ -288,8 +288,11 @@ export default function App() {
   const totalScores = getTotalScores(allPreds, results)
 
   // Weeks won (only fully completed weeks)
+  // Weeks won — hardcoded starting totals from Rounds 2 & 3 (data lost)
+  // Stu won Round 2, Jez won Round 3
+  const STARTING_WEEKS_WON = { "Jez": 1, "Stu": 1, "Olly": 0 }
   const weeksWon = {}
-  PLAYERS.forEach(p => { weeksWon[p] = 0 })
+  PLAYERS.forEach(p => { weeksWon[p] = STARTING_WEEKS_WON[p] || 0 })
   weeks.forEach(w => {
     const weekMatches = MATCHES.filter(m => m.week === w)
     const allDone = weekMatches.every(m => getMatchResult(m, results)?.homeScore != null)
