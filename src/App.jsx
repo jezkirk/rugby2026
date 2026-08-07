@@ -726,6 +726,7 @@ export default function App() {
             {scoredWeeks.map(w => {
               const ws = getWeekScores(w, allPreds, results)
               const maxScore = Math.max(...PLAYERS.map(p => ws[p]))
+              if (maxScore === 0) return null // hide weeks with no points
               return (
                 <div key={w} style={S.weekRow}>
                   <div style={S.weekRowLabel}>{WEEK_LABELS[w]}</div>
