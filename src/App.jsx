@@ -475,4 +475,615 @@ export default function App() {
     MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date))
   )
 
-  async function open
+  async function openPredict(player) {
+    setActivePlayer(player)
+    setPlayerPreds({ ...allPreds[player] })
+    const now = new Date()
+    const current = MATCHES.find(m => new Date(m.date + "T05:00:00Z") > now)
+    if (current) setActiveWeek(current.week)
+    setView("predict")
+  }
+
+  async function handleSavePreds(localPreds) {
+    setSaving(true)
+    const saves = []
+    for (const [matchId, pred] of Object.entries(localPreds)) {
+      if (pred.homeScore != null && pred.awayScore != null &&
+          pred.homeScore !== "" && pred.awayScore !== "") {
+        saves.push(savePrediction(activePlayer, matchId, pred))
+      }
+    }
+    await Promise.all(saves)
+    setAllPreds(prev => ({ ...prev, [activePlayer]: localPreds }))
+    setSaving(false)
+    showToast("Predictions saved ✓")
+    setTimeout(() => setView("home"), 800)
+  }
+
+  const totalScores = getTotalScores(allPreds, results)
+
+  const STARTING_WEEKS_WON = { "Jez": 1, "Stu": 1, "Olly": 0 }
+  const weeksWon = {}
+  PLAYERS.forEach(p => { weeksWon[p] = STARTING_WEEKS_WON[p] || 0 })
+  weeks.forEach(w => {
+    const weekMatches = MATCHES.filter(m => m.week === w)
+    const allDone = weekMatches.every(m => getMatchResult(m, results)?.homeScore != null)
+    if (!allDone) return
+    const ws = getWeekScores(w, allPreds, results)
+    const best = Math.max(...PLAYERS.map(p => ws[p]))
+    const winners = PLAYERS.filter(p => ws[p] === best)
+    if (winners.length === 1) weeksWon[winners[0]]++
+  })
+
+  if (view === "predict") {
+    const weekMatches = MATCHES.filter(m => m.week === activeWeek)
+    const anyOpen = weekMatches.some(m => isPredictionOpen(m.date))
+
+    function setPred(matchId, field, val) {
+      setPlayerPreds(prev => ({ ...prev, [matchId]: { ...prev[matchId], [field]: val } }))
+    }
+
+    return (
+      <div style={S.root}>
+        <GS />
+        <div style={S.hero}>
+          <h2 style={S.pageTitle}>🏉 {activePlayer.toUpperCase()}'S<br />PREDICTIONS</h2>
+          <p style={S.subtitle}>Predictions lock at 6am BST on match day</p>
+        </div>
+        <div style={S.weekTabs}>
+          {weeks.map(w => (
+            <button key={w}
+              style={{ ...S.weekTab, ...(w === activeWeek ? S.weekTabActive : {}), ...(availableWeeks.includes(w) ? S.weekTabAvail : {}) }}
+              onClick={() => setActiveWeek(w)}>
+              {WEEK_LABELS[w]?.split("·")[0].trim()}
+            </button>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", marginBottom: 8 }}>
+          <span style={{ color: "#aaa", fontSize: 13 }}>{WEEK_LABELS[activeWeek]}</span>
+        </div>
+        <div style={S.matchList}>
+          {weekMatches.map(m => {
+            const open = isPredictionOpen(m.date)
+            const soon = isDeadlineSoon(m.date)
+            const actual = getMatchResult(m, results)
+            const pred = playerPreds[m.id] || {}
+            const pts = actual?.homeScore != null ? scorePoints(pred, actual) : null
+            return (
+              <div key={m.id} style={{ ...S.matchCard, ...(!open ? S.matchCardLocked : {}), ...(soon ? S.matchCardSoon : {}) }}>
+                <div style={S.matchMeta}>
+                  <span style={S.matchDate}>{m.date}</span>
+                  {m.label && <span style={S.badge}>{m.label}</span>}
+                  {soon && open && <span style={S.badgeAmber}>🔔 Soon!</span>}
+                  {!open && <span style={S.badge}>🔒 Locked</span>}
+                  {pts !== null && <span style={pts > 0 ? S.badgeGreen : S.badge}>+{pts}pts</span>}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{flag(m.home)} {m.home}</div>
+                  <div style={S.scoreInputGroup}>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="200"
+                        style={{ ...S.scoreInput, ...(!open ? S.scoreInputLocked : {}) }}
+                        value={pred.homeScore ?? ""} onChange={e => open && setPred(m.id, "homeScore", e.target.value)}
+                        readOnly={!open} placeholder="?" />
+                      <div style={S.triesLabel}>score</div>
+                    </div>
+                    <span style={S.scoreSep}>–</span>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="200"
+                        style={{ ...S.scoreInput, ...(!open ? S.scoreInputLocked : {}) }}
+                        value={pred.awayScore ?? ""} onChange={e => open && setPred(m.id, "awayScore", e.target.value)}
+                        readOnly={!open} placeholder="?" />
+                      <div style={S.triesLabel}>score</div>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1", textAlign: "right" }}>{m.away} {flag(m.away)}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, fontSize: 11, color: "#64748b" }}>tries</div>
+                  <div style={S.scoreInputGroup}>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="30"
+                        style={{ ...S.scoreInput, width: 34, height: 30, fontSize: 13, ...(!open ? S.scoreInputLocked : {}) }}
+                        value={pred.homeTries ?? ""} onChange={e => open && setPred(m.id, "homeTries", e.target.value)}
+                        readOnly={!open} placeholder="?" />
+                      <div style={S.triesLabel}>tries</div>
+                    </div>
+                    <span style={{ ...S.scoreSep, fontSize: 12 }}>–</span>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="30"
+                        style={{ ...S.scoreInput, width: 34, height: 30, fontSize: 13, ...(!open ? S.scoreInputLocked : {}) }}
+                        value={pred.awayTries ?? ""} onChange={e => open && setPred(m.id, "awayTries", e.target.value)}
+                        readOnly={!open} placeholder="?" />
+                      <div style={S.triesLabel}>tries</div>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }} />
+                </div>
+                {actual?.homeScore != null && (
+                  <div style={{ fontSize: 12, marginTop: 6, color: "#64748b" }}>
+                    Actual: <strong style={{ color: "#e2e8f0" }}>{actual.homeScore}–{actual.awayScore}</strong>
+                    {actual.homeTries != null && <span> ({actual.homeTries}–{actual.awayTries} tries)</span>}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        {anyOpen && (
+          <div style={{ padding: "16px 20px 8px" }}>
+            <button style={{ ...S.btnPrimary, opacity: saving ? 0.6 : 1 }}
+              onClick={() => handleSavePreds(playerPreds)} disabled={saving}>
+              {saving ? "Saving…" : "💾 Save All Predictions"}
+            </button>
+          </div>
+        )}
+        <div style={{ textAlign: "center", padding: "12px 20px" }}>
+          <button style={S.btnSmall} onClick={() => setView("home")}>← Back to Home</button>
+        </div>
+        <Toast msg={toast} />
+      </div>
+    )
+  }
+
+  if (view === "history") {
+    const completedWeeks = weeks.filter(w =>
+      MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
+    )
+    const colStyle = { flex: 1, textAlign: "center", minWidth: 0 }
+    const headerStyle = { fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5, padding: "4px 0" }
+    const cellStyle = { fontSize: 11, color: "#94a3b8", padding: "3px 2px", lineHeight: 1.4 }
+    const ptsStyle = { fontSize: 10, fontWeight: 700 }
+
+    return (
+      <div style={S.root}>
+        <GS />
+        <div style={S.hero}>
+          <h2 style={S.pageTitle}>📖 HISTORY</h2>
+          <p style={S.subtitle}>Past rounds — results & predictions</p>
+        </div>
+        <div style={S.weekTabs}>
+          {completedWeeks.map(w => (
+            <button key={w} style={{ ...S.weekTab, ...(w === historyWeek ? S.weekTabActive : {}) }}
+              onClick={() => setHistoryWeek(w)}>
+              {WEEK_LABELS[w]?.split("·")[0].trim()}
+            </button>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", marginBottom: 8 }}>
+          <span style={{ color: "#aaa", fontSize: 13 }}>{WEEK_LABELS[historyWeek]}</span>
+        </div>
+        <div style={{ padding: "0 20px" }}>
+          {MATCHES.filter(m => m.week === historyWeek).map(m => {
+            const actual = getMatchResult(m, results)
+            const hasResult = actual?.homeScore != null
+            return (
+              <div key={m.id} style={{ ...S.matchCard, marginBottom: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderBottom: "1px solid #1e293b", paddingBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1 }}>{flag(m.home)} {m.home}</span>
+                  {hasResult ? (
+                    <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: "#f59e0b" }}>
+                      {actual.homeScore}{actual.homeTries != null ? `(${actual.homeTries}T)` : ""} – {actual.awayScore}{actual.awayTries != null ? `(${actual.awayTries}T)` : ""}
+                    </span>
+                  ) : (
+                    <span style={{ color: "#334155", fontSize: 13 }}>No result</span>
+                  )}
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1, textAlign: "right" }}>{m.away} {flag(m.away)}</span>
+                </div>
+                {hasResult && <TryScorers homeScorers={actual.homeScorers} awayScorers={actual.awayScorers} />}
+                <div style={{ display: "flex", gap: 4, marginTop: 8 }}>
+                  {PLAYERS.map(p => {
+                    const pred = allPreds[p]?.[m.id]
+                    const pts = hasResult && pred ? scorePoints(pred, actual) : null
+                    const breakdown = hasResult && pred ? scoreBreakdown(pred, actual) : null
+                    return (
+                      <div key={p} style={colStyle}>
+                        <div style={headerStyle}>{p}</div>
+                        {pred ? (
+                          <>
+                            <div style={cellStyle}>{pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}</div>
+                            {pts !== null && <div style={{ ...ptsStyle, color: pts > 0 ? "#4ade80" : "#64748b" }}>+{pts}pts</div>}
+                            {breakdown && breakdown.map((b, i) => (
+                              <div key={i} style={{ fontSize: 9, color: "#475569", lineHeight: 1.4 }}>{b.label}: +{b.pts}</div>
+                            ))}
+                          </>
+                        ) : (
+                          <div style={{ ...cellStyle, color: "#334155" }}>–</div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ textAlign: "center", padding: "16px 20px" }}>
+          <button style={S.btnSmall} onClick={() => setView("home")}>← Back to Home</button>
+        </div>
+        <Toast msg={toast} />
+      </div>
+    )
+  }
+
+  if (view === "results") {
+    const weekMatches = MATCHES.filter(m => m.week === resultWeek)
+
+    function setLocal(matchId, field, val) {
+      setLocalResults(prev => ({ ...prev, [matchId]: { ...prev[matchId], [field]: val } }))
+    }
+
+    async function saveAll() {
+      for (const m of weekMatches) {
+        const local = localResults[m.id]
+        if (!local) continue
+        if (local.homeScore != null && local.awayScore != null &&
+            local.homeScore !== "" && local.awayScore !== "") {
+          await saveResult(m.home, m.away, local)
+          setResults(prev => ({ ...prev, [`${m.home}|${m.away}`]: local }))
+        }
+      }
+      setLocalResults({})
+      showToast("Results saved ✓")
+    }
+
+    return (
+      <div style={S.root}>
+        <GS />
+        <div style={S.hero}>
+          <h2 style={S.pageTitle}>📋 ENTER RESULTS</h2>
+          <p style={S.subtitle}>Enter final scores and tries per team</p>
+        </div>
+        <div style={S.weekTabs}>
+          {weeks.map(w => (
+            <button key={w} style={{ ...S.weekTab, ...(w === resultWeek ? S.weekTabActive : {}) }}
+              onClick={() => setResultWeek(w)}>
+              {WEEK_LABELS[w]?.split("·")[0].trim()}
+            </button>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", marginBottom: 8 }}>
+          <span style={{ color: "#aaa", fontSize: 13 }}>{WEEK_LABELS[resultWeek]}</span>
+        </div>
+        <div style={S.matchList}>
+          {weekMatches.map(m => {
+            const existing = getMatchResult(m, results)
+            const local = localResults[m.id] || {}
+            const hs = local.homeScore !== undefined ? local.homeScore : (existing?.homeScore ?? "")
+            const as_ = local.awayScore !== undefined ? local.awayScore : (existing?.awayScore ?? "")
+            const ht = local.homeTries !== undefined ? local.homeTries : (existing?.homeTries ?? "")
+            const at = local.awayTries !== undefined ? local.awayTries : (existing?.awayTries ?? "")
+            return (
+              <div key={m.id} style={S.matchCard}>
+                <div style={S.matchMeta}>
+                  <span style={S.matchDate}>{m.date}</span>
+                  {m.label && <span style={S.badge}>{m.label}</span>}
+                  {existing?.homeScore != null && <span style={S.badgeGreen}>✓ Saved</span>}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1" }}>{flag(m.home)} {m.home}</div>
+                  <div style={S.scoreInputGroup}>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="200" style={S.scoreInput}
+                        value={hs} onChange={e => setLocal(m.id, "homeScore", e.target.value)} placeholder="?" />
+                      <div style={S.triesLabel}>score</div>
+                    </div>
+                    <span style={S.scoreSep}>–</span>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="200" style={S.scoreInput}
+                        value={as_} onChange={e => setLocal(m.id, "awayScore", e.target.value)} placeholder="?" />
+                      <div style={S.triesLabel}>score</div>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "#cbd5e1", textAlign: "right" }}>{m.away} {flag(m.away)}</div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, fontSize: 11, color: "#64748b" }}>tries</div>
+                  <div style={S.scoreInputGroup}>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="30"
+                        style={{ ...S.scoreInput, width: 34, height: 30, fontSize: 13 }}
+                        value={ht} onChange={e => setLocal(m.id, "homeTries", e.target.value)} placeholder="?" />
+                      <div style={S.triesLabel}>tries</div>
+                    </div>
+                    <span style={{ ...S.scoreSep, fontSize: 12 }}>–</span>
+                    <div style={S.inputCol}>
+                      <input type="number" min="0" max="30"
+                        style={{ ...S.scoreInput, width: 34, height: 30, fontSize: 13 }}
+                        value={at} onChange={e => setLocal(m.id, "awayTries", e.target.value)} placeholder="?" />
+                      <div style={S.triesLabel}>tries</div>
+                    </div>
+                  </div>
+                  <div style={{ flex: 1 }} />
+                </div>
+                <div style={S.predRow}>
+                  {PLAYERS.map(p => {
+                    const pred = allPreds[p]?.[m.id]
+                    if (!pred) return null
+                    const actual = existing || (localResults[m.id]?.homeScore != null ? {
+                      homeScore: localResults[m.id].homeScore, awayScore: localResults[m.id].awayScore,
+                      homeTries: localResults[m.id].homeTries, awayTries: localResults[m.id].awayTries,
+                    } : null)
+                    const pts = actual?.homeScore != null ? scorePoints(pred, actual) : null
+                    return (
+                      <div key={p} style={S.predItem}>
+                        <span>{p}: </span>
+                        <span style={S.predScore}>{pred.homeScore}–{pred.awayScore}</span>
+                        {pred.homeTries != null && <span style={{ color: "#64748b" }}> ({pred.homeTries}–{pred.awayTries}T)</span>}
+                        {pts !== null && <span style={{ ...S.predPts, color: pts > 0 ? "#4ade80" : "#f87171" }}>+{pts}</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ padding: "16px 20px 8px" }}>
+          <button style={S.btnPrimary} onClick={saveAll}>💾 Save Results</button>
+        </div>
+        <div style={{ textAlign: "center", padding: "8px 20px" }}>
+          <button style={S.btnSmall} onClick={() => setView("home")}>← Back to Home</button>
+        </div>
+        <Toast msg={toast} />
+      </div>
+    )
+  }
+
+  if (view === "leaderboard") {
+    return (
+      <div style={S.root}>
+        <GS />
+        <div style={S.hero}>
+          <h2 style={S.pageTitle}>🏆 LEADERBOARD</h2>
+          <p style={S.subtitle}>{TOURNAMENT.name}</p>
+        </div>
+        <div style={{ padding: "16px 20px 0" }}>
+          {[...PLAYERS].sort((a, b) => totalScores[b] - totalScores[a]).map((p, i) => (
+            <div key={p} style={{ ...S.lbRow, ...(i === 0 ? S.lbRowTop : {}) }}>
+              <div style={S.lbTop}>
+                <div style={{ ...S.rankBadge, ...(i === 0 ? S.rankBadgeLead : {}) }}>{i + 1}</div>
+                <div style={S.lbName}>{p}</div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={S.lbScore}>{totalScores[p] || 0}</div>
+                  <div style={S.lbScoreLabel}>total pts</div>
+                </div>
+              </div>
+              {weeks.map(w => {
+                const ws = getWeekScores(w, allPreds, results)
+                const hasAny = MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
+                if (!hasAny) return null
+                return (
+                  <div key={w} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#64748b", paddingTop: 4, borderTop: "1px solid #1e293b", marginTop: 4 }}>
+                    <span>{WEEK_LABELS[w]}</span>
+                    <span style={{ fontWeight: 600, color: "#e2e8f0" }}>{ws[p]} pts</span>
+                  </div>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", padding: "16px 20px" }}>
+          <button style={S.btnSmall} onClick={() => setView("home")}>← Back</button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── HOME ──
+  const playerColors = [S.scoreCard0, S.scoreCard1, S.scoreCard2]
+  const colStyle = { flex: 1, textAlign: "center", minWidth: 0 }
+  const headerStyle = { fontSize: 11, fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: 0.5, padding: "4px 0" }
+  const cellStyle = { fontSize: 11, color: "#94a3b8", padding: "3px 2px", lineHeight: 1.4 }
+  const ptsStyle = { fontSize: 10, fontWeight: 700 }
+
+  const shownMatches = MATCHES.filter(m => m.week === shownWeek)
+  const allNextPredsIn = shownMatches.length > 0 &&
+    shownMatches.every(m => PLAYERS.every(p => allPreds[p]?.[m.id]?.homeScore != null))
+
+  function HomeMatchCard({ m }) {
+    const actual = getMatchResult(m, results)
+    const hasResult = actual?.homeScore != null
+    const isLive = matchIsLive(m)
+
+    return (
+      <div style={{ ...S.matchCard, marginBottom: 8, ...(isLive ? S.matchCardLive : {}) }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderBottom: "1px solid #1e293b", paddingBottom: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1 }}>{flag(m.home)} {m.home}</span>
+          {hasResult ? (
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: isLive ? "#4ade80" : "#f59e0b" }}>
+              {actual.homeScore}{actual.homeTries != null ? `(${actual.homeTries}T)` : ""} – {actual.awayScore}{actual.awayTries != null ? `(${actual.awayTries}T)` : ""}
+            </span>
+          ) : (
+            <span style={{ color: "#334155", fontSize: 13 }}>{m.kickoff !== "TBC" ? m.kickoff : "vs"}</span>
+          )}
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1, textAlign: "right" }}>{m.away} {flag(m.away)}</span>
+        </div>
+        {hasResult && <TryScorers homeScorers={actual.homeScorers} awayScorers={actual.awayScorers} />}
+        <div style={{ display: "flex", gap: 4, marginTop: hasResult && (actual.homeScorers?.length || actual.awayScorers?.length) ? 8 : 0 }}>
+          {PLAYERS.map(p => {
+            const pred = allPreds[p]?.[m.id]
+            const hasPred = pred?.homeScore != null
+            const pts = hasResult && hasPred ? scorePoints(pred, actual) : null
+            const breakdown = hasResult && hasPred ? scoreBreakdown(pred, actual) : null
+            return (
+              <div key={p} style={colStyle}>
+                <div style={headerStyle}>{p}</div>
+                {hasResult && hasPred ? (
+                  <>
+                    <div style={cellStyle}>{pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}</div>
+                    <div style={{ ...ptsStyle, color: pts > 0 ? "#4ade80" : "#64748b" }}>+{pts}pts</div>
+                    {breakdown && breakdown.map((b, i) => (
+                      <div key={i} style={{ fontSize: 9, color: "#475569", lineHeight: 1.4 }}>{b.label}: +{b.pts}</div>
+                    ))}
+                  </>
+                ) : allNextPredsIn && hasPred ? (
+                  <div style={cellStyle}>{pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}</div>
+                ) : hasPred ? (
+                  <div style={{ ...cellStyle, color: "#f59e0b" }}>hidden</div>
+                ) : (
+                  <div style={{ ...cellStyle, color: "#f87171" }}>pending</div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div style={S.root}>
+      <GS />
+      <div style={{ textAlign: "center", padding: "24px 20px 16px", borderBottom: "1px solid #1e293b" }}>
+        <img src="/logo.png" alt="Nations Championship 2026"
+          style={{ maxWidth: "100%", height: "auto", maxHeight: 120, objectFit: "contain" }} />
+        {liveActive && (
+          <div style={{ marginTop: 8 }}>
+            <span style={S.badgeLive}>● LIVE</span>
+          </div>
+        )}
+      </div>
+
+      <div style={S.scoreboard}>
+        {PLAYERS.map((p, i) => (
+          <div key={p} style={{ ...S.scoreCard, ...playerColors[i] }}>
+            <div style={S.playerName}>{p}</div>
+            <div style={S.bigNum}>{weeksWon[p] || 0}</div>
+            <div style={S.smallLabel}>weeks won</div>
+          </div>
+        ))}
+      </div>
+
+      {(() => {
+        const scoredWeeks = weeks.filter(w =>
+          MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
+        )
+        if (scoredWeeks.length === 0) return null
+        const maxTotal = Math.max(...PLAYERS.map(p => totalScores[p] || 0))
+        return (
+          <div style={S.section}>
+            <div style={S.sectionTitle}>Points</div>
+            <div style={{ ...S.weekRow, background: "#1a1200", border: "1px solid #f59e0b44", marginBottom: 4 }}>
+              <div style={{ ...S.weekRowLabel, fontWeight: 700, color: "#f59e0b" }}>Total</div>
+              <div style={S.weekRowScores}>
+                {PLAYERS.map(p => (
+                  <span key={p} style={{ ...S.weekPts, fontWeight: 700, ...(totalScores[p] === maxTotal && maxTotal > 0 ? S.weekPtsLead : { color: "#e2e8f0" }) }}>
+                    {p}: {totalScores[p] || 0}
+                  </span>
+                ))}
+              </div>
+            </div>
+            {scoredWeeks.map(w => {
+              const ws = getWeekScores(w, allPreds, results)
+              const maxScore = Math.max(...PLAYERS.map(p => ws[p]))
+              if (maxScore === 0) return null
+              return (
+                <div key={w} style={S.weekRow}>
+                  <div style={S.weekRowLabel}>{WEEK_LABELS[w]}</div>
+                  <div style={S.weekRowScores}>
+                    {PLAYERS.map(p => (
+                      <span key={p} style={{ ...S.weekPts, ...(ws[p] === maxScore && maxScore > 0 ? S.weekPtsLead : {}) }}>
+                        {p}: {ws[p] || 0}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
+
+      <div style={{ marginTop: 20 }}>
+        <div style={S.roundNav}>
+          <button
+            style={{ ...S.roundNavBtn, ...(!canGoPrev ? S.roundNavBtnDisabled : {}) }}
+            onClick={() => canGoPrev && setRoundOffset(roundOffset - 1)}
+          >‹</button>
+          <div style={S.roundNavLabel}>{WEEK_LABELS[shownWeek]}</div>
+          <button
+            style={{ ...S.roundNavBtn, ...(!canGoNext ? S.roundNavBtnDisabled : {}) }}
+            onClick={() => canGoNext && setRoundOffset(roundOffset + 1)}
+          >›</button>
+        </div>
+
+        <div style={{ textAlign: "center", fontSize: 12, color: allNextPredsIn ? "#4ade80" : "#64748b", padding: "4px 20px 10px" }}>
+          {allNextPredsIn
+            ? "✅ All predictions in — good luck!"
+            : `Predictions hidden until all players submit`}
+        </div>
+
+        <div style={{ padding: "0 20px" }}>
+          {shownMatches.map(m => <HomeMatchCard key={m.id} m={m} />)}
+        </div>
+      </div>
+
+      <div style={S.section}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+          {PLAYERS.map(p => (
+            <button key={p}
+              style={{ background: "#0f1624", border: "1px solid #1e293b", borderRadius: 12, padding: "16px 8px", cursor: "pointer", textAlign: "center", color: "#e2e8f0", width: "100%" }}
+              onClick={() => openPredict(p)}>
+              <div style={{ fontSize: 22, marginBottom: 4 }}>🏉</div>
+              <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, color: "#fff" }}>{p}</div>
+              <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Predictions</div>
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <button
+            style={{ background: "#1a1200", border: "1px solid #f59e0b44", borderRadius: 12, padding: "16px 8px", cursor: "pointer", textAlign: "center", color: "#e2e8f0" }}
+            onClick={() => setView("leaderboard")}>
+            <div style={{ fontSize: 22, marginBottom: 4 }}>🏆</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, color: "#fff" }}>Leaderboard</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Full breakdown</div>
+          </button>
+          <button
+            style={{ background: "#0a1a0a", border: "1px solid #22c55e44", borderRadius: 12, padding: "16px 8px", cursor: "pointer", textAlign: "center", color: "#e2e8f0" }}
+            onClick={() => setView("results")}>
+            <div style={{ fontSize: 22, marginBottom: 4 }}>📋</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, color: "#fff" }}>Results</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Enter scores</div>
+          </button>
+          <button
+            style={{ background: "#0a0a1a", border: "1px solid #6366f144", borderRadius: 12, padding: "16px 8px", cursor: "pointer", textAlign: "center", color: "#e2e8f0" }}
+            onClick={() => {
+              const completed = weeks.filter(w =>
+                MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
+              )
+              if (completed.length > 0) setHistoryWeek(completed[completed.length - 1])
+              setView("history")
+            }}>
+            <div style={{ fontSize: 22, marginBottom: 4 }}>📖</div>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: 1, color: "#fff" }}>History</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Past rounds</div>
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: "0 20px" }}>
+        <div style={S.rulesBox}>
+          <div style={S.rulesTitle}>📐 SCORING RULES</div>
+          <div style={S.rulesGrid}>
+            <div style={S.rulesPts}>30</div>
+            <div style={S.rulesText}>Exact score + exact tries (both teams) — replaces all other points</div>
+            <div style={S.rulesPts}>10</div>
+            <div style={S.rulesText}>Correct result (win / loss / draw)</div>
+            <div style={S.rulesPts}>5</div>
+            <div style={S.rulesText}>Exact score per team</div>
+            <div style={S.rulesPts}>2</div>
+            <div style={S.rulesText}>Team score within 1–3 points</div>
+            <div style={S.rulesPts}>1</div>
+            <div style={S.rulesText}>Team score within 4–7 points</div>
+            <div style={S.rulesPts}>2</div>
+            <div style={S.rulesText}>Exact tries per team</div>
+          </div>
+          <div style={{ fontSize: 11, color: "#475569", marginTop: 10 }}>Score and tries points apply per team. Max 25pts per match without exact bonus.</div>
+        </div>
+      </div>
+
+      <Toast msg={toast} />
+    </div>
+  )
+}
