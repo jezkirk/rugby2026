@@ -26,6 +26,7 @@ function normTeam(t) {
   return ESPN_NAME_MAP[t] || t
 }
 
+// Parse ESPN scoring plays → try scorer lists
 function countTries(competition, homeId, awayId) {
   const plays = competition?.details || competition?.scoringPlays || competition?.plays || []
   let homeCount = 0, awayCount = 0
@@ -63,6 +64,7 @@ function countTries(competition, homeId, awayId) {
   return { homeCount, awayCount, homeScorers, awayScorers }
 }
 
+// Pull ESPN scoreboard and update results state + Supabase
 async function syncFromEspn(setResults) {
   try {
     const r = await fetch(ESPN_URL)
@@ -182,10 +184,12 @@ const S = {
   weekRowScores: { display: "flex", gap: 10 },
   weekPts: { fontSize: 13, color: "#64748b" },
   weekPtsLead: { color: "#f59e0b", fontWeight: 700 },
+  // Round navigation
   roundNav: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px 4px" },
   roundNavBtn: { background: "#0f1624", border: "1px solid #1e293b", color: "#94a3b8", borderRadius: 8, width: 38, height: 38, fontSize: 22, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1, flexShrink: 0 },
   roundNavBtnDisabled: { opacity: 0.25, cursor: "default", pointerEvents: "none" },
   roundNavLabel: { fontFamily: "'Bebas Neue', sans-serif", fontSize: 17, letterSpacing: 2, color: "#f59e0b", textAlign: "center", flex: 1, padding: "0 8px" },
+  // Try scorers inline
   scorersRow: { display: "flex", gap: 4, marginTop: 6, paddingTop: 6, borderTop: "1px solid #1e293b22" },
   scorersCol: { flex: 1, minWidth: 0 },
   scorerItem: { fontSize: 10, color: "#64748b", lineHeight: 1.6, display: "flex", alignItems: "center", gap: 3, overflow: "hidden" },
@@ -220,6 +224,7 @@ function Toast({ msg }) {
   return <div style={S.toast}>{msg}</div>
 }
 
+// ─── TRY SCORERS INLINE ───────────────────────────────────────────────────────
 function TryScorers({ homeScorers, awayScorers }) {
   const hs = homeScorers || []
   const as_ = awayScorers || []
@@ -361,6 +366,7 @@ function getWeekScores(week, allPreds, results) {
   return scores
 }
 
+// ─── APP ──────────────────────────────────────────────────────────────────────
 export default function App() {
   const [loading, setLoading] = useState(false)
   const [view, setView] = useState("home")
@@ -397,6 +403,7 @@ export default function App() {
     setAllPreds(preds)
   }
 
+  // Which week index should show "live" (first week not yet fully past)
   const liveWeekIndex = (() => {
     const todayStr = new Date().toISOString().slice(0, 10)
     for (let i = 0; i < weeks.length; i++) {
@@ -412,6 +419,7 @@ export default function App() {
   const canGoPrev = clampedIndex > 0
   const canGoNext = clampedIndex < weeks.length - 1
 
+  // Is any match currently in the live window?
   function anyMatchInPlay() {
     const now = Date.now()
     return MATCHES.some(m => {
@@ -426,6 +434,7 @@ export default function App() {
     })
   }
 
+  // Determine if a single match is in its live window
   function matchIsLive(m) {
     if (m.kickoff === "TBC") return false
     const [h, mn] = m.kickoff.split(":").map(Number)
@@ -515,6 +524,7 @@ export default function App() {
     if (winners.length === 1) weeksWon[winners[0]]++
   })
 
+  // ── PREDICT VIEW ──
   if (view === "predict") {
     const weekMatches = MATCHES.filter(m => m.week === activeWeek)
     const anyOpen = weekMatches.some(m => isPredictionOpen(m.date))
@@ -626,6 +636,7 @@ export default function App() {
     )
   }
 
+  // ── HISTORY VIEW ──
   if (view === "history") {
     const completedWeeks = weeks.filter(w =>
       MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
@@ -706,6 +717,7 @@ export default function App() {
     )
   }
 
+  // ── RESULTS VIEW ──
   if (view === "results") {
     const weekMatches = MATCHES.filter(m => m.week === resultWeek)
 
@@ -830,6 +842,7 @@ export default function App() {
     )
   }
 
+  // ── LEADERBOARD VIEW ──
   if (view === "leaderboard") {
     return (
       <div style={S.root}>
@@ -888,6 +901,7 @@ export default function App() {
 
     return (
       <div style={{ ...S.matchCard, marginBottom: 8, ...(isLive ? S.matchCardLive : {}) }}>
+        {/* Match header row: teams + score */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8, borderBottom: "1px solid #1e293b", paddingBottom: 6 }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1 }}>{flag(m.home)} {m.home}</span>
           {hasResult ? (
@@ -895,11 +909,19 @@ export default function App() {
               {actual.homeScore}{actual.homeTries != null ? `(${actual.homeTries}T)` : ""} – {actual.awayScore}{actual.awayTries != null ? `(${actual.awayTries}T)` : ""}
             </span>
           ) : (
-            <span style={{ color: "#334155", fontSize: 13 }}>{m.kickoff !== "TBC" ? m.kickoff : "vs"}</span>
+            <span style={{ color: "#334155", fontSize: 11, textAlign: "center", lineHeight: 1.4 }}>
+              {m.kickoff !== "TBC" ? (
+                <><span style={{ display: "block", fontSize: 10, color: "#334155" }}>{m.date}</span>{m.kickoff}</>
+              ) : "vs"}
+            </span>
           )}
           <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1, textAlign: "right" }}>{m.away} {flag(m.away)}</span>
         </div>
+
+        {/* Try scorers — inline, shown when data available */}
         {hasResult && <TryScorers homeScorers={actual.homeScorers} awayScorers={actual.awayScorers} />}
+
+        {/* Prediction columns */}
         <div style={{ display: "flex", gap: 4, marginTop: hasResult && (actual.homeScorers?.length || actual.awayScorers?.length) ? 8 : 0 }}>
           {PLAYERS.map(p => {
             const pred = allPreds[p]?.[m.id]
@@ -945,6 +967,7 @@ export default function App() {
         )}
       </div>
 
+      {/* Weeks won scoreboard */}
       <div style={S.scoreboard}>
         {PLAYERS.map((p, i) => (
           <div key={p} style={{ ...S.scoreCard, ...playerColors[i] }}>
@@ -955,6 +978,7 @@ export default function App() {
         ))}
       </div>
 
+      {/* Week-by-week points summary */}
       {(() => {
         const scoredWeeks = weeks.filter(w =>
           MATCHES.filter(m => m.week === w).some(m => getMatchResult(m, results)?.homeScore != null)
@@ -995,6 +1019,7 @@ export default function App() {
         )
       })()}
 
+      {/* ── ROUND NAVIGATION ── */}
       <div style={{ marginTop: 20 }}>
         <div style={S.roundNav}>
           <button
@@ -1019,6 +1044,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Action buttons */}
       <div style={S.section}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
           {PLAYERS.map(p => (
@@ -1062,6 +1088,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Scoring rules */}
       <div style={{ padding: "0 20px" }}>
         <div style={S.rulesBox}>
           <div style={S.rulesTitle}>📐 SCORING RULES</div>
