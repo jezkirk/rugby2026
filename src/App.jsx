@@ -910,9 +910,18 @@ export default function App() {
             </span>
           ) : (
             <span style={{ color: "#334155", fontSize: 11, textAlign: "center", lineHeight: 1.4 }}>
-              {m.kickoff !== "TBC" ? (
-                <><span style={{ display: "block", fontSize: 10, color: "#334155" }}>{m.date}</span>{m.kickoff}</>
-              ) : "vs"}
+              {m.kickoff !== "TBC" ? (() => {
+                const [y, mo, d] = m.date.split("-").map(Number)
+                const dt = new Date(y, mo - 1, d)
+                const dayName = dt.toLocaleDateString("en-GB", { weekday: "long" })
+                const monthName = dt.toLocaleDateString("en-GB", { month: "short" })
+                const suffix = d === 1 || d === 21 || d === 31 ? "st" : d === 2 || d === 22 ? "nd" : d === 3 || d === 23 ? "rd" : "th"
+                const [h, mn] = m.kickoff.split(":").map(Number)
+                const ampm = h >= 12 ? "pm" : "am"
+                const h12 = h % 12 || 12
+                const timeStr = `${h12}.${String(mn).padStart(2,"0")}${ampm}`
+                return <>{dayName} {d}{suffix} {monthName} {timeStr}</>
+              })() : "vs"}
             </span>
           )}
           <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", flex: 1, textAlign: "right" }}>{m.away} {flag(m.away)}</span>
