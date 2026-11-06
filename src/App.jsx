@@ -88,7 +88,7 @@ async function syncFromEspn(setResults) {
 
       const status = comp.status?.type?.name || ""
       const completed = comp.status?.type?.completed || false
-      const inProgress = status === "STATUS_IN_PROGRESS" || status === "STATUS_HALFTIME"
+      const inProgress = status === "STATUS_IN_PROGRESS" || status === "STATUS_HALFTIME" || status === "STATUS_FIRST_HALF" || status === "STATUS_SECOND_HALF" || comp.status?.type?.state === "in"
       if (!inProgress && !completed) continue
 
       const homeScore = parseInt(homeComp.score) || 0
