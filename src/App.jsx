@@ -45,7 +45,7 @@ function countTries(competition, homeId, awayId) {
 
     const athleteName = isPenaltyTry
       ? "Penalty Try"
-      : (p.athletes?.[0]?.athlete?.displayName || p.athlete?.displayName || "Unknown")
+      : (p.athletesInvolved?.[0]?.displayName || p.athletesInvolved?.[0]?.fullName || p.athletes?.[0]?.athlete?.displayName || p.athlete?.displayName || "Unknown")
     const min = p.clock?.displayValue || p.period?.displayValue || ""
 
     let conv = false
