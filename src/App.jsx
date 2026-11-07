@@ -7,7 +7,13 @@ import {
 
 // ─── ESPN LIVE SYNC ───────────────────────────────────────────────────────────
 const ESPN_LEAGUE = 17567 // Nations Championship
-const ESPN_URL = `https://site.api.espn.com/apis/site/v2/sports/rugby/${ESPN_LEAGUE}/scoreboard`
+function getEspnUrl() {
+  const d = new Date()
+  const dateStr = d.getUTCFullYear() +
+    String(d.getUTCMonth() + 1).padStart(2, "0") +
+    String(d.getUTCDate()).padStart(2, "0")
+  return `https://site.api.espn.com/apis/site/v2/sports/rugby/${ESPN_LEAGUE}/scoreboard?dates=${dateStr}`
+}
 
 const ESPN_NAME_MAP = {
   "New Zealand": "New Zealand", "All Blacks": "New Zealand",
@@ -67,7 +73,7 @@ function countTries(competition, homeId, awayId) {
 // Pull ESPN scoreboard and update results state + Supabase
 async function syncFromEspn(setResults) {
   try {
-    const r = await fetch(ESPN_URL)
+    const r = await fetch(getEspnUrl())
     if (!r.ok) return false
     const data = await r.json()
     const events = data.events || []
