@@ -38,7 +38,7 @@ export const MATCHES = [
   { id: "r4m3", week: 3, date: "2026-11-07", kickoff: "14:10", home: "Scotland", away: "New Zealand" },
   { id: "r4m4", week: 3, date: "2026-11-07", kickoff: "16:40", home: "Wales", away: "Japan" },
   { id: "r4m5", week: 3, date: "2026-11-07", kickoff: "20:10", home: "France", away: "Fiji" },
-  { id: "r4m6", week: 3, date: "2026-11-08", kickoff: "15:10", home: "England", away: "Australia" },
+  { id: "r4m6", week: 3, date: "2026-11-08", kickoff: "14:10", home: "England", away: "Australia" },
   // WEEK 4 — Round 5, 13-15 November (GMT)
   { id: "r5m1", week: 4, date: "2026-11-13", kickoff: "20:10", home: "France", away: "South Africa" },
   { id: "r5m2", week: 4, date: "2026-11-14", kickoff: "11:40", home: "Italy", away: "Argentina" },
