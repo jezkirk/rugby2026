@@ -436,7 +436,7 @@ export default function App() {
       const koUtc = new Date(`${m.date}T${String(h).padStart(2,"0")}:${String(mn).padStart(2,"0")}:00Z`)
       koUtc.setUTCHours(koUtc.getUTCHours() - bstOffset)
       const ko = koUtc.getTime()
-      return now >= ko - 60000 && now < ko + 4 * 3600000
+      return now >= ko - 60000 && now < ko + 5 * 3600000
     })
   }
 
@@ -450,7 +450,7 @@ export default function App() {
     koUtc.setUTCHours(koUtc.getUTCHours() - bstOffset)
     const ko = koUtc.getTime()
     const now = Date.now()
-    return now >= ko && now < ko + 4 * 3600000
+    return now >= ko && now < ko + 5 * 3600000
   }
 
   async function maybeSync(force) {
