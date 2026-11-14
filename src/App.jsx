@@ -92,6 +92,10 @@ async function syncFromEspn(setResults) {
       const match = MATCHES.find(m => normTeam(m.home) === homeTeam && normTeam(m.away) === awayTeam)
       if (!match) continue
 
+      // Skip rows that have been manually overridden
+      const { data: existing } = await supabase.from("rugby_results").select("manual_override").eq("match_key", `${match.home}|${match.away}`).single()
+      if (existing?.manual_override) continue
+
       const status = comp.status?.type?.name || ""
       const completed = comp.status?.type?.completed || false
       const inProgress = status === "STATUS_IN_PROGRESS" || status === "STATUS_HALFTIME" || status === "STATUS_FIRST_HALF" || status === "STATUS_SECOND_HALF" || comp.status?.type?.state === "in"
