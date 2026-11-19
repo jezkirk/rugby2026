@@ -47,12 +47,12 @@ export const MATCHES = [
   { id: "r5m5", week: 4, date: "2026-11-14", kickoff: "TBC", home: "Ireland", away: "Fiji" },
   { id: "r5m6", week: 4, date: "2026-11-14", kickoff: "TBC", home: "Scotland", away: "Australia" },
   // WEEK 5 — Round 6, 21 November (GMT)
-  { id: "r6m1", week: 5, date: "2026-11-21", kickoff: "TBC", home: "Scotland", away: "Japan" },
-  { id: "r6m2", week: 5, date: "2026-11-21", kickoff: "TBC", home: "England", away: "New Zealand" },
-  { id: "r6m3", week: 5, date: "2026-11-21", kickoff: "TBC", home: "Ireland", away: "South Africa" },
-  { id: "r6m4", week: 5, date: "2026-11-21", kickoff: "TBC", home: "Italy", away: "Fiji" },
-  { id: "r6m5", week: 5, date: "2026-11-21", kickoff: "TBC", home: "Wales", away: "Australia" },
-  { id: "r6m6", week: 5, date: "2026-11-21", kickoff: "TBC", home: "France", away: "Argentina" },
+  { id: "r6m1", week: 5, date: "2026-11-21", kickoff: "14:10", home: "Scotland", away: "Japan" },
+  { id: "r6m2", week: 5, date: "2026-11-21", kickoff: "14:10", home: "England", away: "New Zealand" },
+  { id: "r6m3", week: 5, date: "2026-11-21", kickoff: "16:40", home: "Ireland", away: "South Africa" },
+  { id: "r6m4", week: 5, date: "2026-11-21", kickoff: "16:40", home: "Italy", away: "Fiji" },
+  { id: "r6m5", week: 5, date: "2026-11-21", kickoff: "20:10", home: "Wales", away: "Australia" },
+  { id: "r6m6", week: 5, date: "2026-11-21", kickoff: "20:10", home: "France", away: "Argentina" },
   // WEEK 6 — Finals Weekend, 27-29 November at Twickenham (GMT)
   { id: "fm1", week: 6, date: "2026-11-27", kickoff: "TBC", home: "TBD", away: "TBD", label: "N6th vs S6th" },
   { id: "fm2", week: 6, date: "2026-11-27", kickoff: "TBC", home: "TBD", away: "TBD", label: "N5th vs S5th" },
