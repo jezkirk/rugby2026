@@ -490,9 +490,11 @@ export default function App() {
     }
   }, [])
 
-  const availableWeeks = weeks.filter(w =>
-    MATCHES.filter(m => m.week === w).some(m => isPredictionOpen(m.date))
-  )
+  const availableWeeks = weeks.filter(w => {
+    const wMatches = MATCHES.filter(m => m.week === w)
+    const firstDate = wMatches.map(m => m.date).sort()[0]
+    return firstDate && isPredictionOpen(firstDate)
+  })
 
   async function openPredict(player) {
     setActivePlayer(player)
@@ -537,7 +539,8 @@ export default function App() {
   // ── PREDICT VIEW ──
   if (view === "predict") {
     const weekMatches = MATCHES.filter(m => m.week === activeWeek)
-    const anyOpen = weekMatches.some(m => isPredictionOpen(m.date))
+    const weekFirstDate = weekMatches.map(m => m.date).sort()[0]
+    const anyOpen = weekFirstDate ? isPredictionOpen(weekFirstDate) : false
 
     function setPred(matchId, field, val) {
       setPlayerPreds(prev => ({ ...prev, [matchId]: { ...prev[matchId], [field]: val } }))
@@ -564,8 +567,8 @@ export default function App() {
         </div>
         <div style={S.matchList}>
           {weekMatches.map(m => {
-            const open = isPredictionOpen(m.date)
-            const soon = isDeadlineSoon(m.date)
+            const open = weekFirstDate ? isPredictionOpen(weekFirstDate) : false
+            const soon = weekFirstDate ? isDeadlineSoon(weekFirstDate) : false
             const actual = getMatchResult(m, results)
             const pred = playerPreds[m.id] || {}
             const pts = actual?.homeScore != null ? scorePoints(pred, actual) : null
@@ -901,7 +904,12 @@ export default function App() {
   const ptsStyle = { fontSize: 10, fontWeight: 700 }
 
   const shownMatches = MATCHES.filter(m => m.week === shownWeek)
-  const allNextPredsIn = shownMatches.length > 0 &&
+  const firstMatchDate = shownMatches.length > 0
+    ? shownMatches.map(m => m.date).sort()[0]
+    : null
+  const predsRevealed = firstMatchDate ? !isPredictionOpen(firstMatchDate) : false
+  const allNextPredsIn = predsRevealed &&
+    shownMatches.length > 0 &&
     shownMatches.every(m => PLAYERS.every(p => allPreds[p]?.[m.id]?.homeScore != null))
 
   function HomeMatchCard({ m }) {
@@ -958,7 +966,7 @@ export default function App() {
                       <div key={i} style={{ fontSize: 9, color: "#475569", lineHeight: 1.4 }}>{b.label}: +{b.pts}</div>
                     ))}
                   </>
-                ) : allNextPredsIn && hasPred ? (
+                ) : predsRevealed && hasPred ? (
                   <div style={cellStyle}>{pred.homeScore}{pred.homeTries != null ? `(${pred.homeTries}T)` : ""}–{pred.awayScore}{pred.awayTries != null ? `(${pred.awayTries}T)` : ""}</div>
                 ) : hasPred ? (
                   <div style={{ ...cellStyle, color: "#f59e0b" }}>hidden</div>
@@ -1052,10 +1060,10 @@ export default function App() {
           >›</button>
         </div>
 
-        <div style={{ textAlign: "center", fontSize: 12, color: allNextPredsIn ? "#4ade80" : "#64748b", padding: "4px 20px 10px" }}>
-          {allNextPredsIn
-            ? "✅ All predictions in — good luck!"
-            : `Predictions hidden until all players submit`}
+        <div style={{ textAlign: "center", fontSize: 12, color: predsRevealed ? "#4ade80" : "#64748b", padding: "4px 20px 10px" }}>
+          {predsRevealed
+            ? "✅ Predictions revealed — good luck!"
+            : `Predictions hidden until 1am on match day`}
         </div>
 
         <div style={{ padding: "0 20px" }}>
