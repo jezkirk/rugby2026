@@ -54,12 +54,12 @@ export const MATCHES = [
   { id: "r6m5", week: 5, date: "2026-11-21", kickoff: "20:10", home: "Wales", away: "Australia" },
   { id: "r6m6", week: 5, date: "2026-11-21", kickoff: "20:10", home: "France", away: "Argentina" },
   // WEEK 6 — Finals Weekend, 27-29 November at Twickenham (GMT)
-  { id: "fm1", week: 6, date: "2026-11-27", kickoff: "TBC", home: "TBD", away: "TBD", label: "N6th vs S6th" },
-  { id: "fm2", week: 6, date: "2026-11-27", kickoff: "TBC", home: "TBD", away: "TBD", label: "N5th vs S5th" },
-  { id: "fm3", week: 6, date: "2026-11-28", kickoff: "TBC", home: "TBD", away: "TBD", label: "N4th vs S4th" },
-  { id: "fm4", week: 6, date: "2026-11-28", kickoff: "TBC", home: "TBD", away: "TBD", label: "N3rd vs S3rd" },
-  { id: "fm5", week: 6, date: "2026-11-29", kickoff: "TBC", home: "TBD", away: "TBD", label: "N2nd vs S2nd" },
-  { id: "fm6", week: 6, date: "2026-11-29", kickoff: "TBC", home: "TBD", away: "TBD", label: "🏆 Grand Final" },
+  { id: "fm1", week: 6, date: "2026-11-27", kickoff: "16:40", home: "Italy", away: "Fiji", label: "N6th vs S6th" },
+  { id: "fm2", week: 6, date: "2026-11-27", kickoff: "20:10", home: "Ireland", away: "Australia", label: "N5th vs S5th" },
+  { id: "fm3", week: 6, date: "2026-11-28", kickoff: "13:10", home: "Wales", away: "Japan", label: "N4th vs S4th" },
+  { id: "fm4", week: 6, date: "2026-11-28", kickoff: "16:40", home: "England", away: "New Zealand", label: "N3rd vs S3rd" },
+  { id: "fm5", week: 6, date: "2026-11-29", kickoff: "13:10", home: "Scotland", away: "Argentina", label: "N2nd vs S2nd" },
+  { id: "fm6", week: 6, date: "2026-11-29", kickoff: "16:40", home: "France", away: "South Africa", label: "🏆 Grand Final" },
 ]
 
 // ─── SCORING ─────────────────────────────────────────────────────────────────
