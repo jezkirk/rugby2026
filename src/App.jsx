@@ -93,7 +93,7 @@ async function syncFromEspn(setResults) {
       if (!match) continue
 
       // Skip rows that have been manually overridden
-      const { data: existing } = await supabase.from("rugby_results").select("manual_override").eq("match_key", `${match.home}|${match.away}`).single()
+      const { data: existing } = await supabase.from("rugby_results").select("manual_override").eq("match_key", match.id).single()
       if (existing?.manual_override) continue
 
       const status = comp.status?.type?.name || ""
@@ -108,7 +108,7 @@ async function syncFromEspn(setResults) {
       const { homeCount, awayCount, homeScorers, awayScorers } = countTries(comp, homeId, awayId)
 
       await supabase.from("rugby_results").upsert({
-        match_key: `${match.home}|${match.away}`,
+        match_key: match.id,
         home_team: match.home,
         away_team: match.away,
         home_score: homeScore,
@@ -122,7 +122,7 @@ async function syncFromEspn(setResults) {
 
       setResults(prev => ({
         ...prev,
-        [`${match.home}|${match.away}`]: {
+        [match.id]: {
           homeScore, awayScore,
           homeTries: homeCount, awayTries: awayCount,
           homeScorers, awayScorers,
@@ -322,19 +322,20 @@ async function loadResults() {
   const { data } = await supabase.from("rugby_results").select("*")
   const map = {}
   if (data) data.forEach(r => {
-    map[`${r.home_team}|${r.away_team}`] = {
+    map[r.match_key] = {
       homeScore: r.home_score, awayScore: r.away_score,
       homeTries: r.home_tries, awayTries: r.away_tries,
       homeScorers: r.home_scorers || null,
       awayScorers: r.away_scorers || null,
+      manual_override: r.manual_override || false,
     }
   })
   return map
 }
 
-async function saveResult(home, away, result) {
+async function saveResult(matchId, home, away, result) {
   await supabase.from("rugby_results").upsert({
-    match_key: `${home}|${away}`,
+    match_key: matchId,
     home_team: home, away_team: away,
     home_score: parseInt(result.homeScore),
     away_score: parseInt(result.awayScore),
@@ -345,7 +346,7 @@ async function saveResult(home, away, result) {
 }
 
 function getMatchResult(match, results) {
-  return results[`${match.home}|${match.away}`] || null
+  return results[match.id] || null
 }
 
 function getTotalScores(allPreds, results) {
@@ -744,8 +745,8 @@ export default function App() {
         if (!local) continue
         if (local.homeScore != null && local.awayScore != null &&
             local.homeScore !== "" && local.awayScore !== "") {
-          await saveResult(m.home, m.away, local)
-          setResults(prev => ({ ...prev, [`${m.home}|${m.away}`]: local }))
+          await saveResult(m.id, m.home, m.away, local)
+          setResults(prev => ({ ...prev, [m.id]: local }))
         }
       }
       setLocalResults({})
