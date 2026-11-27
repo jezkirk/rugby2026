@@ -89,7 +89,10 @@ async function syncFromEspn(setResults) {
 
       const homeTeam = normTeam(homeComp.team?.displayName || homeComp.team?.name)
       const awayTeam = normTeam(awayComp.team?.displayName || awayComp.team?.name)
-      const match = MATCHES.find(m => normTeam(m.home) === homeTeam && normTeam(m.away) === awayTeam)
+      // Find the match closest to today's date to handle duplicate team pairings across rounds
+      const todayMs = Date.now()
+      const candidates = MATCHES.filter(m => normTeam(m.home) === homeTeam && normTeam(m.away) === awayTeam)
+      const match = candidates.sort((a, b) => Math.abs(new Date(a.date) - todayMs) - Math.abs(new Date(b.date) - todayMs))[0]
       if (!match) continue
 
       // Skip rows that have been manually overridden
@@ -464,7 +467,12 @@ export default function App() {
     if (!force && Date.now() - lastPoll.current < 85000) return
     polling.current = true
     try {
-      await syncFromEspn(setResults)
+      const espnUpdated = await syncFromEspn(setResults)
+      // Always reload from Supabase so manual entries show up even when ESPN has no data
+      if (!espnUpdated) {
+        const res = await loadResults()
+        setResults(res)
+      }
       lastPoll.current = Date.now()
       setLiveActive(anyMatchInPlay())
     } catch { }
